@@ -24,19 +24,17 @@ export default class JavaScriptPlugin {
     const expression =
       args.length > 0 ? args[0] : await getVisualSelection(this._nvim);
 
-    const result = await this._chrome.Runtime.evaluate({
+    const { exceptionDetails, result } = await this._chrome.Runtime.evaluate({
       expression,
       generatePreview: true,
     });
 
-    if (result.exceptionDetails) {
-      echoerr(
-        this._nvim,
-        `Failed with message: ${result.exceptionDetails.text}`,
-      );
+    if (exceptionDetails) {
+      echoerr(this._nvim, `Failed with message: ${exceptionDetails.text}`);
       return;
     }
-
-    console.log(result);
+    if (result && result.value) {
+      return this._nvim.setLine(JSON.stringify(result.value));
+    }
   };
 }
