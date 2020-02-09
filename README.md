@@ -31,6 +31,7 @@ After installing or updating you need to run `:UpdateRemotePlugins` and restart 
 
 - `g:ChromeDevTools_host`: Chrome host, `localhost` by default.
 - `g:ChromeDevTools_port`: Chrome port, `9222` by default.
+- `g:ChromeDevTools_defaultUrl`: Default Url to connect to, not set by default.
 
 ## Commands
 

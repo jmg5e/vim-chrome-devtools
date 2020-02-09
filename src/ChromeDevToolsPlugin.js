@@ -37,7 +37,6 @@ export default class ChromeDevToolsPlugin {
     plugin.registerCommand('ChromeDevToolsConnect', this.listOrConnect, {
       nargs: '*',
     });
-
     plugin.registerAutocmd('TextChanged', this.cssSetStyleSheetText, {
       pattern: '*.css',
     });
@@ -58,12 +57,12 @@ export default class ChromeDevToolsPlugin {
     };
   }
 
-  listOrConnect = (args: string[]) => {
+  listOrConnect = async (args: string[]) => {
     if (args.length == 0) {
-      this.list();
+      await this.list();
     } else {
       const [target] = args[0].split(':');
-      this.connect(target);
+      await this.connect(target);
     }
   };
 
@@ -71,28 +70,29 @@ export default class ChromeDevToolsPlugin {
     let targets;
     try {
       targets = await CDP.List(await this._getDefaultOptions());
+
+      if (!targets) {
+        return;
+      }
+      const defaultUrl = await this._nvim.getVar('ChromeDevTools_defaultUrl');
+
+      const labels = targets
+        .filter(({ url }) => (defaultUrl ? url.includes(defaultUrl) : true))
+        .map(({ id, title, url }) => `${id}: ${title} - ${url}`);
+
+      if (labels.length == 0) {
+        echomsg(this._nvim, 'No targets available.');
+      } else if (labels.length == 1) {
+        this.listOrConnect(labels);
+      } else {
+        await this._nvim.call('fzf#run', {
+          down: '40%',
+          sink: 'ChromeDevToolsConnect',
+          source: labels,
+        });
+      }
     } catch (e) {
       echoerr(this._nvim, e.message);
-    }
-
-    if (!targets) {
-      return;
-    }
-
-    const labels = targets.map(
-      ({ id, title, url }) => `${id}: ${title} - ${url}`,
-    );
-
-    if (labels.length == 0) {
-      echomsg(this._nvim, 'No targets available.');
-    } else {
-      await this._nvim.call('fzf#run', {
-        down: '40%',
-        sink: 'ChromeDevToolsConnect',
-        source: labels,
-      });
-      // Force focus on fzf.
-      await this._nvim.input('<c-m>');
     }
   };
 
