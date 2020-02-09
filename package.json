@@ -13,16 +13,20 @@
     ]
   },
   "dependencies": {
-    "chrome-remote-interface": "^0.26.0"
+    "chrome-remote-interface": "^0.28.1",
+    "neovim": "^4.8.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
+    "babel-eslint": "^10.0.3",
     "babel-plugin-syntax-async-functions": "^6.13.0",
     "babel-plugin-syntax-trailing-function-commas": "^6.22.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.6.0",
     "babel-preset-flow": "^6.23.0",
+    "eslint": "^6.8.0",
+    "eslint-plugin-flowtype": "^4.6.0",
     "flow-bin": "^0.81.0",
     "husky": "^0.14.3",
     "lint-staged": "^7.0.0",
