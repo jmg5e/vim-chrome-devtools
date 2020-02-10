@@ -4,6 +4,7 @@ import CDP, { type Chrome, type Script } from 'chrome-remote-interface';
 import { type NeovimPlugin, type NeovimClient } from 'neovim';
 
 import JavaScriptPlugin from './plugins/JavaScriptPlugin';
+import NetworkPlugin from './plugins/NetworkPlugin';
 import { getVisualSelection, debounce } from './utils';
 import { echomsg, echoerr } from './echo';
 
@@ -14,6 +15,7 @@ export default class ChromeDevToolsPlugin {
   _scripts: Script[];
 
   _js: JavaScriptPlugin;
+  _network: NetworkPlugin;
 
   constructor(plugin: NeovimPlugin) {
     this._plugin = plugin;
@@ -24,7 +26,15 @@ export default class ChromeDevToolsPlugin {
     });
 
     this._js = new JavaScriptPlugin(plugin);
+    this._network = new NetworkPlugin(plugin);
 
+    plugin.registerFunction(
+      'ChromeDevTools_List_Requests',
+      this._network.listRequests,
+      {
+        sync: false,
+      },
+    );
     plugin.registerFunction('ChromeDevTools_Page_reload', this.pageReload, {
       sync: false,
     });
@@ -33,7 +43,6 @@ export default class ChromeDevToolsPlugin {
       this.cssCreateStyleSheet,
       { sync: false },
     );
-
     plugin.registerCommand('ChromeDevToolsConnect', this.listOrConnect, {
       nargs: '*',
     });
@@ -45,7 +54,17 @@ export default class ChromeDevToolsPlugin {
       debounce(this.cssSetStyleSheetText, 200),
       { pattern: '*.css' },
     );
+
+    // TODO janky autoconnect just for easier testing
+    // plugin.registerAutocmd('BufWinEnter', this.autoConnect, {
+    //   sync: false,
+    //   pattern: '*.js',
+    //   eval: 'expand("<afile>")',
+    // });
   }
+  autoConnect = async () => {
+    await this.listOrConnect([]);
+  };
 
   async _getDefaultOptions() {
     const port = await this._nvim.getVar('ChromeDevTools_port');
@@ -111,8 +130,14 @@ export default class ChromeDevToolsPlugin {
     await chrome.DOM.enable();
     await chrome.CSS.enable();
     await chrome.Runtime.enable();
+    await chrome.Network.enable();
     await chrome.Debugger.enable();
 
+    this._network.startNetworkMonitor(chrome);
+    // this._network = new NetworkPlugin(this._plugin, this._js._chrome);
+    // chrome.Network.requestWillBeSent(params => {
+    //   console.log(params.request.url);
+    // });
     chrome.once('disconnect', () => {
       echomsg(this._nvim, 'Disconnected from target.');
     });
